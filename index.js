@@ -1,43 +1,48 @@
-// Import the express library and assign it to a variable
-import express from 'express'
+import express from 'express';
 
-// Create an instance of an express application 
-const app = express()
+const app = express();
 
-// Set the port the application will be running on
-const port = process.env.PORT || 3001
+const port = process.env.PORT || 3001;
 
-// Set up a response for the root path of the application
 app.get('/', (req, res) => {
-  res.send("Soda Finder API")
-})
+  res.send("Fast Food Finder API");
+});
 
-const sodas = {
-  cola: "Coca-Cola",
-  lemonlime: "Sprite",
-  rootbeer: "A&W",
-  gingerale: "Canada Dry",
-  orange: "Fanta",
-  grape: "Welch's Grape Soda",
-  cream: "Barq's Cream Soda",
-  pepsi: "Pepsi",
-  drpepper: "Dr Pepper"
-}
+const fastFood = {
+  burger: "McDonald's",
+  taco: "Taco Bell",
+  pizza: "Pizza Hut",
+  sandwich: "Subway",
+  friedchicken: "Popeyes",
+  doughnut: "Dunkin' Donuts",
+  coffee: "Starbucks",
+  icecream: "Dairy Queen",
+  sub: "Jersey Mike's",
+  burrito: "Chipotle",
+  hotdog: "Nathan's Famous",
+  salad: "Sweetgreen",
+  smoothie: "Jamba Juice",
+  sushi: "Sushi Stop"
+};
 
-app.get('/soda', (req, res) => {
-  const type = req.query.type; // Access the soda type
-  if (!type || !sodas[type]) {
-    res.send("Soda not found! Please provide a valid type.");
+app.get('/food', (req, res) => {
+  const type = req.query.type;
+  const size = req.query.size;
+
+  if (!type || !fastFood[type]) {
+    res.send("Fast food item not found! Please provide a valid type.");
+  } else if (!size) {
+    res.send(`Food Type: ${type}, Brand: ${fastFood[type]}`);
   } else {
-    res.send(`Soda Type: ${type}, Brand: ${sodas[type]}`);
+    res.send(`Food Type: ${type}, Brand: ${fastFood[type]}, Size: ${size}`);
   }
 });
 
 app.get('/brand/:brandName', (req, res) => {
-  const brandName = req.params.brandName; // Access the brand name from the route
+  const brandName = req.params.brandName;
   res.send(`Brand requested: ${brandName}`);
 });
 
 app.listen(port, () => {
-  console.log(`Soda Finder API running on ${port}`);
+  console.log(`Fast Food Finder API running on port ${port}`);
 });
