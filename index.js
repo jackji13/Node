@@ -1,4 +1,5 @@
 import express from 'express';
+import fetch from 'node-fetch';
 
 const app = express();
 
@@ -20,6 +21,23 @@ app.get('/', (req, res) => {
     }
   });
 });
+
+// Example of an application route that makes a request to another server
+app.get('/advice', async (req, res) => {
+  // Make a request to another wbesite and wait for a response
+  const response = await fetch('https://api.adviceslip.com/advice')
+
+  // Read the response
+  const body = await response.json()
+
+  // Print the repsonse body to the console
+  console.log(body)
+
+  // Get the advice text string from the response body object
+  const advice = body.slip.advice
+
+  res.json({ data: advice })
+})
 
 const fastFood = {
   burger: { brand: "McDonald's", calories: 250, servingSize: "1 burger" },
