@@ -1,11 +1,16 @@
 import express from 'express';
 import fetch from 'node-fetch';
 import 'dotenv/config';
+import cors from 'cors'
 
 const app = express();
 const port = process.env.PORT || 3001;
 const apiKey = process.env.API_KEY;
 console.log(`Your API Key is: ${apiKey}`);
+
+app.use(cors({
+  origin: '*'
+}));
 
 app.get('/', (req, res) => {
   res.json({
