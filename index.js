@@ -88,16 +88,22 @@ app.get('/brand/:brandName', (req, res) => {
   }
 });
 
-// Search endpoint to filter food items based on a query
+// Search endpoint to filter food items based on a query// Updated search endpoint to include brand name search
 app.get('/search', (req, res) => {
-  const query = req.query.query;
+  const query = req.query.query.toLowerCase();
   if (!query) {
     res.status(400).json({ error: "Please provide a query parameter." });
-  } else {
-    const results = Object.keys(fastFood).filter(type => type.includes(query.toLowerCase()));
-    res.json({ data: results });
+    return;
   }
+
+  // Search for matches in both food types and brand names
+  const results = Object.keys(fastFood).filter(type => 
+    type.includes(query) || fastFood[type].brand.toLowerCase().includes(query)
+  );
+
+  res.json({ data: results });
 });
+
 
 app.listen(port, () => {
   console.log(`Fast Food Finder API running on port ${port}`);
