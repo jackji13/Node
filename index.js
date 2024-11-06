@@ -1,7 +1,7 @@
 import express from 'express';
 import fetch from 'node-fetch';
 import 'dotenv/config';
-import cors from 'cors'
+import cors from 'cors';
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -18,34 +18,33 @@ app.get('/', (req, res) => {
     description: "Find information on various fast food items, including brands and nutritional details.",
     endpoints: {
       root: "/ - Overview of the API",
-      food: "/food?type=<type>&size=<size> - Search for a specific fast food item with optional size",
+      food: "/food - Get all fast food items",
+      foodByType: "/food/:type - Get details of a specific fast food item by type",
       brand: "/brand/:brandName - Get information about a specific brand",
+      search: "/search?query=<query> - Search for fast food items by keyword"
     },
     exampleUsage: {
-      getBurger: "/food?type=burger",
-      getWithSize: "/food?type=burger&size=large",
-      brandExample: "/brand/Starbucks"
+      allFood: "/food",
+      getBurger: "/food/burger",
+      brandExample: "/brand/Starbucks",
+      searchExample: "/search?query=burger"
     }
   });
 });
 
-// Example of an application route that makes a request to another server
+// Route to get advice from an external API
 app.get('/advice', async (req, res) => {
-  // Make a request to another wbesite and wait for a response
-  const response = await fetch('https://api.adviceslip.com/advice')
+  try {
+    const response = await fetch('https://api.adviceslip.com/advice');
+    const body = await response.json();
+    const advice = body.slip.advice;
+    res.json({ data: advice });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch advice" });
+  }
+});
 
-  // Read the response
-  const body = await response.json()
-
-  // Print the repsonse body to the console
-  console.log(body)
-
-  // Get the advice text string from the response body object
-  const advice = body.slip.advice
-
-  res.json({ data: advice })
-})
-
+// Fast food items database
 const fastFood = {
   burger: { brand: "McDonald's", calories: 250, servingSize: "1 burger" },
   taco: { brand: "Taco Bell", calories: 170, servingSize: "1 taco" },
@@ -63,28 +62,41 @@ const fastFood = {
   sushi: { brand: "Sushi Stop", calories: 180, servingSize: "1 roll" }
 };
 
+// Endpoint to get all fast food items
 app.get('/food', (req, res) => {
-  const type = req.query.type;
-  const size = req.query.size;
+  res.json({ data: fastFood });
+});
 
-  if (!type || !fastFood[type]) {
-    res.send("Fast food item not found! Please provide a valid type.");
+// Endpoint to get details of a specific fast food item by type
+app.get('/food/:type', (req, res) => {
+  const type = req.params.type;
+  if (!fastFood[type]) {
+    res.status(404).json({ error: "Fast food item not found! Please provide a valid type." });
   } else {
-    const foodItem = fastFood[type];
-    let response = {
-      type,
-      brand: foodItem.brand,
-      calories: foodItem.calories,
-      servingSize: foodItem.servingSize,
-      size: size || "default"
-    };
-    res.json(response);
+    res.json({ data: fastFood[type] });
   }
 });
 
+// Endpoint to get information about a specific brand
 app.get('/brand/:brandName', (req, res) => {
   const brandName = req.params.brandName;
-  res.send(`Brand requested: ${brandName}`);
+  const item = Object.values(fastFood).find(food => food.brand.toLowerCase() === brandName.toLowerCase());
+  if (!item) {
+    res.status(404).json({ error: "Brand not found! Please provide a valid brand name." });
+  } else {
+    res.json({ data: item });
+  }
+});
+
+// Search endpoint to filter food items based on a query
+app.get('/search', (req, res) => {
+  const query = req.query.query;
+  if (!query) {
+    res.status(400).json({ error: "Please provide a query parameter." });
+  } else {
+    const results = Object.keys(fastFood).filter(type => type.includes(query.toLowerCase()));
+    res.json({ data: results });
+  }
 });
 
 app.listen(port, () => {
