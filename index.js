@@ -1,5 +1,4 @@
 import express from 'express';
-import fetch from 'node-fetch';
 import 'dotenv/config';
 import cors from 'cors';
 
@@ -8,9 +7,23 @@ const port = process.env.PORT || 3001;
 const apiKey = process.env.API_KEY;
 console.log(`Your API Key is: ${apiKey}`);
 
+const allowedOrigins = [
+  'https://jackji13.github.io/2024LAB',
+  'http://127.0.0.1:5500',
+  'http://localhost:3001'
+];
+
 app.use(cors({
-  origin: '*'
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  }
 }));
+
+app.use(express.json());
 
 app.get('/', (req, res) => {
   res.json({
@@ -32,20 +45,7 @@ app.get('/', (req, res) => {
   });
 });
 
-// Route to get advice from an external API
-app.get('/advice', async (req, res) => {
-  try {
-    const response = await fetch('https://api.adviceslip.com/advice');
-    const body = await response.json();
-    const advice = body.slip.advice;
-    res.json({ data: advice });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to fetch advice" });
-  }
-});
-
-// Fast food items database
-const fastFood = {
+let fastFood = {
   burger: { brand: "McDonald's", calories: 250, servingSize: "1 burger" },
   taco: { brand: "Taco Bell", calories: 170, servingSize: "1 taco" },
   pizza: { brand: "Pizza Hut", calories: 285, servingSize: "1 slice" },
@@ -62,48 +62,67 @@ const fastFood = {
   sushi: { brand: "Sushi Stop", calories: 180, servingSize: "1 roll" }
 };
 
-// Endpoint to get all fast food items
 app.get('/food', (req, res) => {
   res.json({ data: fastFood });
 });
 
-// Endpoint to get details of a specific fast food item by type
 app.get('/food/:type', (req, res) => {
   const type = req.params.type;
   if (!fastFood[type]) {
-    res.status(404).json({ error: "Fast food item not found! Please provide a valid type." });
+    res.status(404).json({ error: "Fast food item not found!" });
   } else {
     res.json({ data: fastFood[type] });
   }
 });
 
-// Endpoint to get information about a specific brand
+app.post('/food', (req, res) => {
+  const { type, brand, calories, servingSize } = req.body;
+  if (fastFood[type]) {
+    return res.status(400).json({ error: "Food item already exists!" });
+  }
+  fastFood[type] = { brand, calories, servingSize };
+  res.status(201).json({ message: "Food item added successfully!", data: fastFood[type] });
+});
+
+app.put('/food/:type', (req, res) => {
+  const type = req.params.type;
+  if (!fastFood[type]) {
+    return res.status(404).json({ error: "Food item not found!" });
+  }
+  const { brand, calories, servingSize } = req.body;
+  fastFood[type] = { brand, calories, servingSize };
+  res.json({ message: "Food item updated successfully!", data: fastFood[type] });
+});
+
+app.delete('/food/:type', (req, res) => {
+  const type = req.params.type;
+  if (!fastFood[type]) {
+    return res.status(404).json({ error: "Food item not found!" });
+  }
+  delete fastFood[type];
+  res.json({ message: "Food item deleted successfully!" });
+});
+
 app.get('/brand/:brandName', (req, res) => {
   const brandName = req.params.brandName;
   const item = Object.values(fastFood).find(food => food.brand.toLowerCase() === brandName.toLowerCase());
   if (!item) {
-    res.status(404).json({ error: "Brand not found! Please provide a valid brand name." });
+    res.status(404).json({ error: "Brand not found!" });
   } else {
     res.json({ data: item });
   }
 });
 
-// Search endpoint to filter food items based on a query// Updated search endpoint to include brand name search
 app.get('/search', (req, res) => {
-  const query = req.query.query.toLowerCase();
+  const query = req.query.query?.toLowerCase();
   if (!query) {
-    res.status(400).json({ error: "Please provide a query parameter." });
-    return;
+    return res.status(400).json({ error: "Please provide a query parameter." });
   }
-
-  // Search for matches in both food types and brand names
-  const results = Object.keys(fastFood).filter(type => 
+  const results = Object.keys(fastFood).filter(type =>
     type.includes(query) || fastFood[type].brand.toLowerCase().includes(query)
   );
-
   res.json({ data: results });
 });
-
 
 app.listen(port, () => {
   console.log(`Fast Food Finder API running on port ${port}`);
